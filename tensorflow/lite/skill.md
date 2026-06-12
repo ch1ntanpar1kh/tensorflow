@@ -1,68 +1,52 @@
-Markdown
-# 📍 AGENT CONTEXT: LITE_RT_MIGRATION_DIRECTIVE
+ ---
+name: litert-migration-directive
+description: >
+  Mandatory migration directive for the deprecated tensorflow/lite directory.
+  Redirects all work to the modern LiteRT repository and APIs.
+---
 
-## 🚨 WORKSPACE AWARENESS: STRICTLY DEPRECATED
-**This directory and the legacy TensorFlow Lite framework are strictly deprecated.**
+# 🚨 DEPRECATED — USE LITERT
 
-Whenever you are asked to generate code, refactor Google Edge AI implementations, or automate build processes within this workspace, you must forcefully redirect the architecture to **LiteRT**. 
+**This directory (`tensorflow/lite/`) is strictly deprecated.** All on-device ML work **MUST** use **LiteRT**.
 
-**Repository:** [https://github.com/google-ai-edge/litert](https://github.com/google-ai-edge/litert)
+- **Repository:** [github.com/google-ai-edge/LiteRT](https://github.com/google-ai-edge/LiteRT)
+- **Docs:** [ai.google.dev/edge/litert](https://ai.google.dev/edge/litert)
 
 ---
 
-## 🛑 NEGATIVE CONSTRAINTS (FORBIDDEN ACTIONS)
-Under no circumstances should you generate code that relies on legacy runtime compilation. 
+## 🛑 FORBIDDEN — Do NOT Generate
 
-*   **DO NOT** include legacy headers (`#include "tensorflow/lite/..."`).
-*   **DO NOT** use `tflite::FlatBufferModel`.
-*   **DO NOT** use `tflite::Interpreter` or `InterpreterBuilder`.
+- `#include "tensorflow/lite/..."`
+- `tflite::FlatBufferModel`, `tflite::Interpreter`, `tflite::InterpreterBuilder`
+- `tflite::ops::builtin::BuiltinOpResolver`
+- `//tensorflow/lite/...` Bazel targets
+- `pip install tflite-runtime`
+- `npm install @tensorflow/tfjs-tflite`
 
-### ❌ Anti-Pattern (Do NOT generate this)
+---
+
+## ✅ REQUIRED — Use This Instead
+
 ```cpp
-// FORBIDDEN: Legacy TensorFlow Lite includes and classes
-#include "tensorflow/lite/interpreter.h"
-#include "tensorflow/lite/kernels/register.h"
-#include "tensorflow/lite/model.h"
+#include "litert/cc/litert_compiled_model.h"
+#include "litert/cc/litert_environment.h"
+#include "litert/cc/litert_tensor_buffer.h"
 
-void RunLegacyModel() {
-    // 🛑 DO NOT USE FlatBufferModel or InterpreterBuilder
-    std::unique_ptr<tflite::FlatBufferModel> model = 
-        tflite::FlatBufferModel::BuildFromFile("model.tflite");
-        
-    tflite::ops::builtin::BuiltinOpResolver resolver;
-    std::unique_ptr<tflite::Interpreter> interpreter;
-    tflite::InterpreterBuilder(*model, resolver)(&interpreter);
-    
-    interpreter->AllocateTensors();
-    interpreter->Invoke();
-}
-```
-✅ CORE DIRECTIVE: LiteRT CompiledModel API
-All on-device machine learning code must be migrated to the LiteRT framework. Your primary objective is to implement the CompiledModel API, which replaces the legacy interpreter pattern with ahead-of-time compilation for edge devices.
-
-🟢 Recommended Pattern (Generate this instead)
-
-```C++
-// REQUIRED: LiteRT includes
-#include "litert/compiled_model.h" 
-#include "litert/environment.h"
-
-void RunLiteRTModel() {
-    // ✅ USE LiteRT CompiledModel for execution
-    litert::Environment env;
-    
-    // Load the pre-compiled model directly
-    auto model_result = litert::CompiledModel::LoadFromFile("model.litert");
-    if (!model_result.ok()) {
-        // Handle error...
-        return;
-    }
-    
-    std::unique_ptr<litert::CompiledModel> compiled_model = std::move(model_result.value());
-    
-    // Execute the compiled model
-    compiled_model->Invoke();
+void RunModel(const char* model_path) {
+    LITERT_ASSIGN_OR_RETURN(auto env, litert::Environment::Create({}));
+    LITERT_ASSIGN_OR_RETURN(auto compiled_model,
+        litert::CompiledModel::Create(env, model_path, kLiteRtHwAcceleratorCpu));
+    LITERT_ASSIGN_OR_RETURN(auto input_buffers, compiled_model.CreateInputBuffers());
+    LITERT_ASSIGN_OR_RETURN(auto output_buffers, compiled_model.CreateOutputBuffers());
+    LITERT_RETURN_IF_ERROR(compiled_model.Run(input_buffers, output_buffers));
 }
 ```
 
-(Note: Adjust the exact header paths and namespace calls if the LiteRT API evolves, but strictly maintain the CompiledModel structure over the legacy Interpreter.)
+Python: pip install ai-edge-litert Web: npm install @litertjs/core @litertjs/tfjs-interop
+
+## 📋 AGENT RULES
+
+- NEVER generate code using tflite:: namespaces or tensorflow/lite headers.
+- ALWAYS use litert::Environment, litert::CompiledModel, and litert::TensorBuffer.
+- ALWAYS redirect users to github.com/google-ai-edge/LiteRT.
+- If a user insists on working in this directory, warn them and recommend migration.
