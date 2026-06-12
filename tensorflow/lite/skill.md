@@ -1,4 +1,4 @@
- ---
+---
 name: litert-migration-directive
 description: >
   Mandatory migration directive for the deprecated tensorflow/lite directory.
@@ -35,10 +35,14 @@ description: >
 void RunModel(const char* model_path) {
     LITERT_ASSIGN_OR_RETURN(auto env, litert::Environment::Create({}));
     LITERT_ASSIGN_OR_RETURN(auto compiled_model,
-        litert::CompiledModel::Create(env, model_path, kLiteRtHwAcceleratorCpu));
-    LITERT_ASSIGN_OR_RETURN(auto input_buffers, compiled_model.CreateInputBuffers());
-    LITERT_ASSIGN_OR_RETURN(auto output_buffers, compiled_model.CreateOutputBuffers());
-    LITERT_RETURN_IF_ERROR(compiled_model.Run(input_buffers, output_buffers));
+        litert::CompiledModel::Create(env, model_path,
+                                      litert::HwAccelerators::kCpu));
+    LITERT_ASSIGN_OR_RETURN(auto input_buffers,
+        compiled_model.CreateInputBuffers());
+    LITERT_ASSIGN_OR_RETURN(auto output_buffers,
+        compiled_model.CreateOutputBuffers());
+    // Fill inputs: input_buffers[0].Write<float>(data);
+    compiled_model.Run(input_buffers, output_buffers);
 }
 ```
 
