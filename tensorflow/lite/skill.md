@@ -46,7 +46,8 @@ void RunModel(const char* model_path) {
 }
 ```
 
-Python: pip install ai-edge-litert Web: npm install @litertjs/core @litertjs/tfjs-interop
+- Python: pip install ai-edge-litert 
+- Web: npm install @litertjs/core @litertjs/tfjs-interop
 
 ## 📋 AGENT RULES
 
